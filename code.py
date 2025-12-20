@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler, PolynomialFeatures
 from sklearn.metrics import accuracy_score
 from scipy import ndimage
 
@@ -62,26 +63,39 @@ def load_data(human_folder, non_human_folder):
     return np.array(features), np.array(labels)
 
 
-# Your dataset paths
+#dataset paths
 human_path = "E:/PycharmProjects/dataset/human"
 non_human_path = "E:/PycharmProjects/dataset/non_human"
 
-# Load data
+# Loading data
 X, y = load_data(human_path, non_human_path)
 
 print(f"Total images loaded: {len(X)}")
 print(f"Humans: {sum(y)}, Non-humans: {len(y) - sum(y)}")
 
-# Split into train and test (30% test, 70% train)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+# Split into train and test (20% test, 80% train)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Use LOGISTIC REGRESSION instead of Linear Regression
-model = LogisticRegression(max_iter=1000)
-model.fit(X_train, y_train)
+# Scale the features
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Add polynomial features (degree 2 = includes x^2, xy, etc.)
+poly = PolynomialFeatures(degree=2, include_bias=False)
+X_train_poly = poly.fit_transform(X_train_scaled)
+X_test_poly = poly.transform(X_test_scaled)
+
+print(f"\nOriginal features: {X_train_scaled.shape[1]}")
+print(f"After polynomial expansion: {X_train_poly.shape[1]}")
+
+# Train model with polynomial features
+model = LogisticRegression(max_iter=2000, class_weight='balanced', C=0.1)
+model.fit(X_train_poly, y_train)
 
 # Predict
-y_pred_class = model.predict(X_test)
-y_pred_proba = model.predict_proba(X_test)[:, 1]  # Probability of being human
+y_pred_class = model.predict(X_test_poly)
+y_pred_proba = model.predict_proba(X_test_poly)[:, 1]
 
 # Calculate statistics
 accuracy = accuracy_score(y_test, y_pred_class)
@@ -94,23 +108,17 @@ actual_non_humans = sum(y_test == 0)
 correct_humans = sum((y_test == 1) & (y_pred_class == 1))
 correct_non_humans = sum((y_test == 0) & (y_pred_class == 0))
 
-print(f"\n=== TEST SET RESULTS ===")
+print(f"\n=== TEST SET RESULTS (POLYNOMIAL FEATURES) ===")
 print(f"Total test images: {total_test}")
 print(f"Actual Humans: {actual_humans}")
 print(f"Actual Non-Humans: {actual_non_humans}")
 print(f"\nPredicted Humans: {sum(y_pred_class == 1)}")
 print(f"Predicted Non-Humans: {sum(y_pred_class == 0)}")
-print(f"\nCorrectly predicted Humans: {correct_humans}/{actual_humans}")
-print(f"Correctly predicted Non-Humans: {correct_non_humans}/{actual_non_humans}")
+print(f"\nCorrectly predicted Humans: {correct_humans}/{actual_humans} ({100 * correct_humans / actual_humans:.1f}%)")
+print(
+    f"Correctly predicted Non-Humans: {correct_non_humans}/{actual_non_humans} ({100 * correct_non_humans / actual_non_humans:.1f}%)")
 print(f"\nTotal Correct: {correct}/{total_test}")
 print(f"Accuracy: {accuracy * 100:.2f}%")
-
-# Print feature importance
-print(f"\n=== FEATURE COEFFICIENTS ===")
-feature_names = ['Edge Count', 'Object Count', 'Std Dev', 'Variance', 'Edge Density']
-for i, name in enumerate(feature_names):
-    print(f"{name}: {model.coef_[0][i]:.6f}")
-print(f"Intercept: {model.intercept_[0]:.6f}")
 
 # Plot
 plt.figure(figsize=(14, 6))
@@ -133,7 +141,7 @@ plt.scatter(X_test[~correct_mask & (y_test == 0), 0],
             c='orange', marker='x', label='Wrong (Was Non-Human)', alpha=0.9, s=150, linewidths=3)
 plt.xlabel('Edge Count')
 plt.ylabel('Object Count')
-plt.title('Predictions')
+plt.title('Predictions with Polynomial Features')
 plt.legend()
 plt.grid(True, alpha=0.3)
 
@@ -147,6 +155,6 @@ plt.ylabel('Object Count')
 plt.title('Prediction Confidence')
 plt.grid(True, alpha=0.3)
 
-plt.suptitle(f'Logistic Regression | Accuracy: {accuracy * 100:.1f}%', fontsize=14, fontweight='bold')
+plt.suptitle(f'Polynomial Features (degree=2) | Accuracy: {accuracy * 100:.1f}%', fontsize=14, fontweight='bold')
 plt.tight_layout()
 plt.show()
