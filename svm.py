@@ -126,18 +126,7 @@ def predict_url(url, model, scaler, pca, img_size=(128, 64)):
         return None
 
 
-# Test examples
-urls = [
-    "https://i.pinimg.com/1200x/ec/e6/7c/ece67cb653a6c07ab10d83e4a95191e8.jpg",  # No human?
-    "https://cdn.vntrip.vn/cam-nang/wp-content/uploads/2020/10/bi-quyet-chup-anh-dep-cho-nguoi-khong-an-anh-4.jpg",  # Human?
-]
-for url in urls:
-    pred = predict_url(url, clf, scaler, pca)
-    print(f"{url}: {'HUMAN' if pred == 1 else 'NO HUMAN'}")
-    import joblib
-
-    # Save ALL needed pieces
+# Save the model
 joblib.dump(clf, 'human_svm_model.joblib')
 joblib.dump(scaler, 'scaler.joblib')
 joblib.dump(pca, 'pca.joblib')
-print("Model saved! Ready for camera detection.")
