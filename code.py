@@ -115,16 +115,12 @@ print(f"Actual Non-Humans: {actual_non_humans}")
 print(f"\nPredicted Humans: {sum(y_pred_class == 1)}")
 print(f"Predicted Non-Humans: {sum(y_pred_class == 0)}")
 print(f"\nCorrectly predicted Humans: {correct_humans}/{actual_humans} ({100 * correct_humans / actual_humans:.1f}%)")
-print(
-    f"Correctly predicted Non-Humans: {correct_non_humans}/{actual_non_humans} ({100 * correct_non_humans / actual_non_humans:.1f}%)")
+print(f"Correctly predicted Non-Humans: {correct_non_humans}/{actual_non_humans} ({100 * correct_non_humans / actual_non_humans:.1f}%)")
 print(f"\nTotal Correct: {correct}/{total_test}")
 print(f"Accuracy: {accuracy * 100:.2f}%")
 
-# Plot
-plt.figure(figsize=(14, 6))
-
-# Plot 1: Predictions
-plt.subplot(1, 2, 1)
+# ============ WINDOW 1: Predictions ============
+plt.figure(figsize=(10, 7))
 correct_mask = y_test == y_pred_class
 
 plt.scatter(X_test[correct_mask & (y_test == 1), 0],
@@ -139,22 +135,51 @@ plt.scatter(X_test[~correct_mask & (y_test == 1), 0],
 plt.scatter(X_test[~correct_mask & (y_test == 0), 0],
             X_test[~correct_mask & (y_test == 0), 1],
             c='orange', marker='x', label='Wrong (Was Non-Human)', alpha=0.9, s=150, linewidths=3)
-plt.xlabel('Edge Count')
-plt.ylabel('Object Count')
-plt.title('Predictions with Polynomial Features')
+plt.xlabel('Edge Count', fontsize=12)
+plt.ylabel('Object Count', fontsize=12)
+plt.title(f'Predictions | Accuracy: {accuracy * 100:.1f}%', fontsize=14, fontweight='bold')
 plt.legend()
 plt.grid(True, alpha=0.3)
+plt.tight_layout()
 
-# Plot 2: Prediction confidence
-plt.subplot(1, 2, 2)
+# ============ WINDOW 2: Prediction Confidence ============
+plt.figure(figsize=(10, 7))
 scatter = plt.scatter(X_test[:, 0], X_test[:, 1], c=y_pred_proba, cmap='RdYlGn',
                       s=100, alpha=0.7, edgecolors='black', vmin=0, vmax=1)
 plt.colorbar(scatter, label='Probability of Human')
-plt.xlabel('Edge Count')
-plt.ylabel('Object Count')
-plt.title('Prediction Confidence')
+plt.xlabel('Edge Count', fontsize=12)
+plt.ylabel('Object Count', fontsize=12)
+plt.title('Prediction Confidence', fontsize=14, fontweight='bold')
 plt.grid(True, alpha=0.3)
-
-plt.suptitle(f'Polynomial Features (degree=2) | Accuracy: {accuracy * 100:.1f}%', fontsize=14, fontweight='bold')
 plt.tight_layout()
+
+# ============ WINDOW 3: Regression Curve ============
+plt.figure(figsize=(10, 7))
+
+# Sort test data by edge count for a smooth line
+sort_idx = np.argsort(X_test[:, 0])
+X_test_sorted = X_test[sort_idx]
+y_pred_proba_sorted = y_pred_proba[sort_idx]
+y_test_sorted = y_test.values[sort_idx] if hasattr(y_test, 'values') else y_test[sort_idx]
+
+# Plot the regression line
+plt.plot(X_test_sorted[:, 0], y_pred_proba_sorted, 'b-', linewidth=2, label='Prediction Curve')
+
+# Plot actual values as dots
+plt.scatter(X_test[y_test == 1, 0], y_test[y_test == 1],
+            c='red', marker='o', s=80, alpha=0.6, label='Actual Human', edgecolors='black')
+plt.scatter(X_test[y_test == 0, 0], y_test[y_test == 0],
+            c='blue', marker='o', s=80, alpha=0.6, label='Actual Non-Human', edgecolors='black')
+
+# Add threshold line
+plt.axhline(y=0.5, color='black', linestyle='--', linewidth=2, label='Decision Threshold (0.5)')
+
+plt.xlabel('Edge Count', fontsize=12)
+plt.ylabel('Prediction Value', fontsize=12)
+plt.title('Regression Curve', fontsize=14, fontweight='bold')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.ylim(-0.1, 1.1)
+plt.tight_layout()
+
 plt.show()
